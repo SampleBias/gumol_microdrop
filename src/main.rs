@@ -7,12 +7,18 @@ mod ui;
 mod visualization;
 
 use data_models::{CurrentPanel, ApplicationState};
-use ui::{card_editor::CardEditorPanel, simulation_importer::SimulationImporterPanel};
 use visualization::droplet_grid::DropletGridPlugin;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Gumol MicroDrop Design Studio".to_string(),
+                resolution: (1400., 900.).into(),
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugins(EguiPlugin)
         .add_plugins(DropletGridPlugin)
         .add_systems(Startup, setup)
@@ -24,68 +30,84 @@ fn main() {
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
-    commands.spawn((
-        TextBundle::from_section(
-            "Gumol MicroDrop Design Studio",
-            TextStyle {
-                font_size: 40.0,
-                color: Color::WHITE,
-                ..default()
-            },
-        )
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            left: Val::Px(20.0),
-            top: Val::Px(20.0),
-            ..default()
-        }),
-    ));
 }
 
 fn ui_system(
     mut contexts: EguiContexts,
     mut current_panel: ResMut<CurrentPanel>,
-    app_state: Res<ApplicationState>,
+    mut app_state: ResMut<ApplicationState>,
 ) {
-    egui::SidePanel::left("panel_selector")
-        .default_width(250.0)
-        .show(contexts.ctx_mut(), |ui| {
-            ui.heading("Navigation");
-            ui.separator();
+    let ctx = contexts.ctx_mut();
 
-            ui.selectable_value(&mut *current_panel, CurrentPanel::SimulationImport, "1. Simulation Import");
-            ui.selectable_value(&mut *current_panel, CurrentPanel::CardEditor, "2. Card Editor");
-            ui.selectable_value(&mut *current_panel, CurrentPanel::ParameterMapping, "3. Parameter Mapping");
-            ui.selectable_value(&mut *current_panel, CurrentPanel::ExperimentDesign, "4. Experiment Design");
-            ui.selectable_value(&mut *current_panel, CurrentPanel::NucleraConfig, "5. Nuclera Config");
-            ui.selectable_value(&mut *current_panel, CurrentPanel::ProtocolGenerator, "6. Protocol Generator");
-            ui.selectable_value(&mut *current_panel, CurrentPanel::DataViewer, "7. Data Viewer");
+    egui::SidePanel::left("nav_panel")
+        .exact_width(160.0)
+        .show(ctx, |ui| {
+            ui.add_space(8.0);
+            ui.heading("MicroDrop");
+            ui.separator();
+            ui.add_space(4.0);
+
+            let panels = [
+                (CurrentPanel::SimulationImport, "1. Import"),
+                (CurrentPanel::CardEditor, "2. Card Editor"),
+                (CurrentPanel::ParameterMapping, "3. Param Map"),
+                (CurrentPanel::ExperimentDesign, "4. Experiment"),
+                (CurrentPanel::NucleraConfig, "5. Nuclera"),
+                (CurrentPanel::ProtocolGenerator, "6. Protocol"),
+                (CurrentPanel::DataViewer, "7. Data"),
+            ];
+
+            for (panel, label) in panels {
+                ui.selectable_value(&mut *current_panel, panel, label);
+            }
 
             ui.separator();
-            ui.label(format!("Status: {}", if app_state.simulation_file.is_some() { "Simulation loaded" } else { "No simulation" }));
+            ui.add_space(4.0);
+
+            if app_state.simulation.is_some() {
+                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), "Sim: loaded");
+            } else {
+                ui.colored_label(egui::Color32::GRAY, "Sim: none");
+            }
+
+            if app_state.droplet_matrix.is_some() {
+                let n = app_state.droplet_matrix.as_ref().unwrap().droplets.len();
+                ui.colored_label(egui::Color32::from_rgb(100, 200, 100), format!("Matrix: {n}"));
+            } else {
+                ui.colored_label(egui::Color32::GRAY, "Matrix: none");
+            }
         });
 
-    match *current_panel {
+    egui::TopBottomPanel::bottom("status_bar")
+        .exact_height(24.0)
+        .show(ctx, |ui| {
+            ui.horizontal_centered(|ui| {
+                ui.label(&app_state.status_message);
+            });
+        });
+
+    let panel = *current_panel;
+    match panel {
         CurrentPanel::SimulationImport => {
-            SimulationImporterPanel::render(ui::simulation_importer::SimulationImporterContext, contexts, &mut *current_panel);
+            ui::simulation_importer::render(ctx, &mut app_state, &mut current_panel);
         }
         CurrentPanel::CardEditor => {
-            CardEditorPanel::render(ui::card_editor::CardEditorContext, contexts, &app_state);
+            ui::card_editor::render(ctx, &mut app_state);
         }
         CurrentPanel::ParameterMapping => {
-            ui::parameter_mapping::render_parameter_mapping(contexts);
+            ui::parameter_mapping::render(ctx, &mut app_state, &mut current_panel);
         }
         CurrentPanel::ExperimentDesign => {
-            ui::experiment_design::render_experiment_design(contexts);
+            ui::experiment_design::render(ctx, &mut app_state, &mut current_panel);
         }
         CurrentPanel::NucleraConfig => {
-            ui::nuclera_config::render_nuclera_config(contexts);
+            ui::nuclera_config::render(ctx, &mut app_state, &mut current_panel);
         }
         CurrentPanel::ProtocolGenerator => {
-            ui::protocol_generator::render_protocol_generator(contexts);
+            ui::protocol_generator::render(ctx, &mut app_state);
         }
         CurrentPanel::DataViewer => {
-            ui::data_viewer::render_data_viewer(contexts);
+            ui::data_viewer::render(ctx, &mut app_state);
         }
     }
 }

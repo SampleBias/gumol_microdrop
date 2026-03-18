@@ -4,6 +4,53 @@ use std::collections::HashMap;
 pub struct ExperimentDesigner;
 
 impl ExperimentDesigner {
+    pub fn generate_matrix_from_config(
+        oxidant_levels: &[f64],
+        antioxidants: &[String],
+        exposure_times: &[f64],
+        max_droplets: usize,
+        oxidant_type: &str,
+    ) -> DropletMatrix {
+        let mut droplets = Vec::new();
+        let mut idx = 1;
+
+        for &conc in oxidant_levels {
+            for antioxidant in antioxidants {
+                for &time in exposure_times {
+                    if droplets.len() >= max_droplets {
+                        break;
+                    }
+                    let is_control = antioxidant.eq_ignore_ascii_case("control");
+                    droplets.push(DropletCondition {
+                        droplet_id: format!("D{}", idx),
+                        oxidant_concentration: conc,
+                        oxidant_type: oxidant_type.to_string(),
+                        antioxidant: antioxidant.clone(),
+                        antioxidant_concentration: if is_control { 0.0 } else { 50.0 },
+                        exposure_time: time,
+                        buffer_type: "PBS".to_string(),
+                    });
+                    idx += 1;
+                }
+            }
+        }
+
+        let total = droplets.len();
+        let grid_cols = 12;
+        let grid_rows = ((total as f64) / grid_cols as f64).ceil().max(1.0) as usize;
+
+        DropletMatrix {
+            droplets,
+            metadata: MatrixMetadata {
+                experiment_id: format!("EXP_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S")),
+                created_at: chrono::Utc::now().to_rfc3339(),
+                total_droplets: total,
+                grid_rows,
+                grid_cols,
+            },
+        }
+    }
+
     pub fn generate_matrix(
         experimental_ranges: &HashMap<String, Vec<f64>>,
         max_droplets: usize,
@@ -12,57 +59,19 @@ impl ExperimentDesigner {
             .get("oxidant_concentration")
             .cloned()
             .unwrap_or_default();
-
         let exposure_times = experimental_ranges
             .get("exposure_time")
             .cloned()
             .unwrap_or_default();
+        let antioxidants = vec!["Control".to_string(), "SOD3".to_string(), "Catalase".to_string()];
 
-        let antioxidants = vec!["control".to_string(), "SOD3".to_string(), "Catalase".to_string()];
-
-        let mut droplets = Vec::new();
-        let mut droplet_index = 1;
-
-        let grid_size = (max_droplets as f64).sqrt().ceil() as usize;
-        let grid_cols = grid_size;
-        let grid_rows = ((max_droplets as f64) / grid_cols as f64).ceil() as usize;
-
-        for (ox_idx, oxidant) in oxidant_levels.iter().enumerate() {
-            for (_ant_idx, antioxidant) in antioxidants.iter().enumerate() {
-                let time_idx = ox_idx % exposure_times.len();
-                let exposure_time = exposure_times[time_idx];
-
-                if droplets.len() >= max_droplets {
-                    break;
-                }
-
-                let droplet = DropletCondition {
-                    droplet_id: format!("D{}", droplet_index),
-                    oxidant_concentration: *oxidant,
-                    oxidant_type: "H2O2".to_string(),
-                    antioxidant: antioxidant.clone(),
-                    antioxidant_concentration: if *antioxidant != "control" { 50.0 } else { 0.0 },
-                    exposure_time,
-                    buffer_type: "PBS".to_string(),
-                };
-
-                droplets.push(droplet);
-                droplet_index += 1;
-            }
-        }
-
-        let total_droplets = droplets.len();
-
-        DropletMatrix {
-            droplets,
-            metadata: MatrixMetadata {
-                experiment_id: format!("EXP_{}", chrono::Utc::now().format("%Y%m%d_%H%M%S")),
-                created_at: chrono::Utc::now().to_rfc3339(),
-                total_droplets,
-                grid_rows,
-                grid_cols,
-            },
-        }
+        Self::generate_matrix_from_config(
+            &oxidant_levels,
+            &antioxidants,
+            &exposure_times,
+            max_droplets,
+            "H2O2",
+        )
     }
 
     pub fn optimize_for_cartridge(matrix: DropletMatrix, cartridge_capacity: usize) -> DropletMatrix {
@@ -78,9 +87,6 @@ impl ExperimentDesigner {
             grid_cols: 12,
         };
 
-        DropletMatrix {
-            droplets,
-            metadata,
-        }
+        DropletMatrix { droplets, metadata }
     }
 }

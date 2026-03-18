@@ -19,7 +19,7 @@ impl SimulationImporter {
 
     pub fn import_from_csv(path: &Path) -> Result<GumolSimulation> {
         // Parse CSV format
-        let mut reader = csv::Reader::from_path(path)?;
+        let _reader = csv::Reader::from_path(path)?;
 
         // This would need specific CSV format parsing
         // For now, return a basic structure
@@ -37,8 +37,8 @@ impl SimulationImporter {
     pub fn extract_feature_vector(simulation: &GumolSimulation) -> SimulationFeatureVector {
         let mut total_superoxide: f64 = 0.0;
         let mut peak_h2o2: f64 = 0.0;
-        let mut total_diffusion: f64 = 0.0;
-        let mut total_reaction: f64 = 0.0;
+        let _total_diffusion: f64 = 0.0;
+        let _total_reaction: f64 = 0.0;
         let mut total_antioxidant: f64 = 0.0;
 
         for time_point in &simulation.time_series {

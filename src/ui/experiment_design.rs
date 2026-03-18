@@ -1,173 +1,173 @@
-use crate::ui::render_header;
 use bevy_egui::egui;
-use bevy_egui::EguiContexts;
+use crate::data_models::{ApplicationState, CurrentPanel};
+use crate::modules::ExperimentDesigner;
 
-pub fn render_experiment_design(mut contexts: EguiContexts) {
-    let mut rows = 8usize;
-    let mut cols = 12usize;
-    let mut min_replicates = 3usize;
-    let mut ensure_stats = true;
-    let mut minimize_usage = false;
-
-    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        render_header(ui, "4. Experiment Design");
+pub fn render(ctx: &egui::Context, state: &mut ApplicationState, panel: &mut CurrentPanel) {
+    egui::CentralPanel::default().show(ctx, |ui| {
+        super::render_header(ui, "4. Experiment Design");
 
         ui.horizontal(|ui| {
-            // Left panel: Matrix configuration
             ui.vertical(|ui| {
-                ui.heading("Droplet Matrix Configuration");
+                ui.set_max_width(350.0);
+                ui.heading("Matrix Configuration");
                 ui.separator();
+
+                ui.horizontal(|ui| {
+                    ui.label("Rows:");
+                    ui.add(egui::DragValue::new(&mut state.grid_rows).range(1..=16));
+                    ui.label("Cols:");
+                    ui.add(egui::DragValue::new(&mut state.grid_cols).range(1..=24));
+                });
+                ui.label(format!("Cartridge capacity: {} droplets", state.grid_rows * state.grid_cols));
 
                 ui.add_space(10.0);
 
-                ui.group(|ui| {
-                    ui.label("Matrix Dimensions");
-                    ui.add_space(5.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Rows:");
-                        ui.add(egui::DragValue::new(&mut rows).clamp_range(1..=16));
-                        ui.label("Cols:");
-                        ui.add(egui::DragValue::new(&mut cols).clamp_range(1..=24));
-                    });
-
-                    ui.label(format!("Total droplets: {}", rows * cols));
-                });
-
-                ui.add_space(15.0);
-
-                ui.group(|ui| {
-                    ui.label("Optimization Constraints");
-                    ui.add_space(5.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Nuclera capacity:");
-                        ui.label("96 droplets");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Min replicates:");
-                        ui.add(egui::DragValue::new(&mut min_replicates).clamp_range(1..=10));
-                    });
-
-                    ui.checkbox(&mut ensure_stats, "Ensure statistical power");
-                    ui.checkbox(&mut minimize_usage, "Minimize reagent usage");
-                });
-
-                ui.add_space(15.0);
+                let active_ax: Vec<String> = state.antioxidants.iter()
+                    .filter(|(_, e)| *e)
+                    .map(|(n, _)| n.clone())
+                    .collect();
+                let n_ox = if state.parameter_ranges.contains_key("oxidant_concentration") {
+                    state.parameter_ranges["oxidant_concentration"].len()
+                } else { 5 };
 
                 ui.group(|ui| {
                     ui.label("Design Factors");
-                    ui.add_space(5.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Oxidant levels:");
-                        ui.label("5");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Antioxidant conditions:");
-                        ui.label("3");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Time points:");
-                        ui.label("4");
-                    });
-
-                    ui.label(format!("Full factorial: {}", 5 * 3 * 4));
+                    ui.label(format!("Oxidant levels: {}", n_ox));
+                    ui.label(format!("Antioxidant conditions: {}", active_ax.len()));
+                    ui.label(format!("Time points: {}", state.exposure_times.len()));
+                    let full = n_ox * active_ax.len() * state.exposure_times.len();
+                    ui.label(format!("Full factorial: {} conditions", full));
                 });
 
-                ui.add_space(20.0);
+                ui.add_space(10.0);
 
                 ui.horizontal(|ui| {
                     if ui.button("Generate Matrix").clicked() {
-                        // Generate the experiment matrix
+                        let oxidant_levels = state.parameter_ranges
+                            .get("oxidant_concentration")
+                            .cloned()
+                            .unwrap_or_else(|| {
+                                let n = 5;
+                                let step = (state.max_concentration - state.min_concentration) / (n - 1) as f64;
+                                (0..n).map(|i| state.min_concentration + step * i as f64).collect()
+                            });
+
+                        let max = state.grid_rows * state.grid_cols;
+                        let matrix = ExperimentDesigner::generate_matrix_from_config(
+                            &oxidant_levels,
+                            &active_ax,
+                            &state.exposure_times,
+                            max,
+                            &state.oxidant_type,
+                        );
+                        state.status_message = format!("Matrix: {} droplets", matrix.droplets.len());
+                        state.droplet_matrix = Some(matrix);
                     }
-                    if ui.button("Optimize for Cartridge").clicked() {
-                        // Optimize for cartridge constraints
+
+                    if state.droplet_matrix.is_some() {
+                        if ui.button("Optimize for 96").clicked() {
+                            if let Some(m) = state.droplet_matrix.take() {
+                                let opt = ExperimentDesigner::optimize_for_cartridge(m, 96);
+                                state.status_message = format!("Optimized to {} droplets", opt.droplets.len());
+                                state.droplet_matrix = Some(opt);
+                            }
+                        }
                     }
                 });
+
+                if let Some(matrix) = &state.droplet_matrix {
+                    ui.add_space(10.0);
+                    ui.group(|ui| {
+                        ui.strong("Matrix Stats");
+                        ui.label(format!("Total: {} droplets", matrix.metadata.total_droplets));
+                        ui.label(format!("Grid: {}×{}", matrix.metadata.grid_rows, matrix.metadata.grid_cols));
+                        ui.label(format!("ID: {}", matrix.metadata.experiment_id));
+                        let vol = matrix.droplets.len() as f64 * state.default_volume;
+                        ui.label(format!("Est. volume: {:.0} nL", vol));
+                    });
+                }
 
                 ui.add_space(15.0);
-
-                ui.group(|ui| {
-                    ui.heading("Matrix Statistics");
-                    ui.add_space(5.0);
-
-                    ui.label("Total conditions: 60");
-                    ui.label("Reagent volume: ~300 nL");
-                    ui.label("Estimated time: 2.5 hours");
-                });
+                if ui.button("Next: Nuclera Config →").clicked() {
+                    *panel = CurrentPanel::NucleraConfig;
+                }
             });
 
             ui.separator();
 
-            // Right panel: Matrix preview
             ui.vertical(|ui| {
                 ui.heading("Matrix Preview");
                 ui.separator();
 
-                ui.add_space(10.0);
-
-                // Sample matrix table
-                egui::ScrollArea::vertical()
-                    .max_height(400.0)
-                    .show(ui, |ui| {
-                        egui::Grid::new("matrix_preview")
-                            .num_columns(4)
-                            .spacing([10.0, 5.0])
-                            .striped(true)
-                            .show(ui, |ui| {
-                                ui.label("Droplet");
-                                ui.label("Oxidant");
-                                ui.label("Antioxidant");
-                                ui.label("Time");
-                                ui.end_row();
-
-                                // Sample data
-                                for i in 1..=20 {
-                                    let oxidant = match i {
-                                        1 => "0 µM",
-                                        2..=5 => "10 µM",
-                                        6..=10 => "50 µM",
-                                        11..=15 => "100 µM",
-                                        _ => "250 µM",
-                                    };
-
-                                    let antioxidant = match i % 3 {
-                                        0 => "Control",
-                                        1 => "SOD3",
-                                        _ => "Catalase",
-                                    };
-
-                                    let time = match i % 4 {
-                                        0 => "5m",
-                                        1 => "10m",
-                                        2 => "30m",
-                                        _ => "60m",
-                                    };
-
-                                    ui.label(format!("D{}", i));
-                                    ui.label(oxidant);
-                                    ui.label(antioxidant);
-                                    ui.label(time);
+                if let Some(matrix) = &state.droplet_matrix {
+                    egui::ScrollArea::vertical()
+                        .max_height(500.0)
+                        .show(ui, |ui| {
+                            egui::Grid::new("matrix_preview")
+                                .num_columns(5)
+                                .spacing([12.0, 4.0])
+                                .striped(true)
+                                .show(ui, |ui| {
+                                    ui.strong("ID");
+                                    ui.strong("Oxidant (µM)");
+                                    ui.strong("Antioxidant");
+                                    ui.strong("Ax (U/mL)");
+                                    ui.strong("Time (min)");
                                     ui.end_row();
-                                }
-                            });
-                    });
 
-                ui.add_space(15.0);
+                                    for d in &matrix.droplets {
+                                        ui.label(&d.droplet_id);
+                                        ui.label(format!("{:.0}", d.oxidant_concentration));
+                                        ui.label(&d.antioxidant);
+                                        ui.label(format!("{:.0}", d.antioxidant_concentration));
+                                        ui.label(format!("{:.0}", d.exposure_time));
+                                        ui.end_row();
+                                    }
+                                });
+                        });
+                } else {
+                    ui.label("Generate a matrix to see preview.");
+                }
 
-                ui.horizontal(|ui| {
+                if state.droplet_matrix.is_some() {
+                    ui.add_space(10.0);
                     if ui.button("Export Matrix (CSV)").clicked() {
-                        // Export to CSV
+                        if let Some(path) = rfd::FileDialog::new()
+                            .set_file_name("droplet_matrix.csv")
+                            .add_filter("CSV", &["csv"])
+                            .save_file()
+                        {
+                            if let Some(matrix) = &state.droplet_matrix {
+                                match export_matrix_csv(matrix, &path) {
+                                    Ok(_) => state.status_message = format!("Exported to {}", path.display()),
+                                    Err(e) => state.status_message = format!("Export error: {}", e),
+                                }
+                            }
+                        }
                     }
-                    if ui.button("View Full Matrix").clicked() {
-                        // Show full matrix
-                    }
-                });
+                }
             });
         });
     });
+}
+
+fn export_matrix_csv(
+    matrix: &crate::data_models::DropletMatrix,
+    path: &std::path::Path,
+) -> anyhow::Result<()> {
+    let mut wtr = csv::Writer::from_path(path)?;
+    wtr.write_record(["droplet_id", "oxidant_type", "oxidant_uM", "antioxidant", "antioxidant_UmL", "exposure_min", "buffer"])?;
+    for d in &matrix.droplets {
+        wtr.write_record([
+            &d.droplet_id,
+            &d.oxidant_type,
+            &format!("{:.1}", d.oxidant_concentration),
+            &d.antioxidant,
+            &format!("{:.1}", d.antioxidant_concentration),
+            &format!("{:.0}", d.exposure_time),
+            &d.buffer_type,
+        ])?;
+    }
+    wtr.flush()?;
+    Ok(())
 }

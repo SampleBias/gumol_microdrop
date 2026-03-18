@@ -1,251 +1,242 @@
-use crate::ui::render_header;
 use bevy_egui::egui;
-use bevy_egui::EguiContexts;
+use crate::data_models::ApplicationState;
+use crate::modules::CorrelationAnalyzer;
 
-pub fn render_data_viewer(mut contexts: EguiContexts) {
-    let mut show_prediction = true;
-    let mut show_error_dist = true;
-    let mut show_residual = false;
-    let mut show_confidence = false;
-    let mut selected_viz = 0usize;
-
-    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        render_header(ui, "7. Data Viewer & Correlation Analysis");
+pub fn render(ctx: &egui::Context, state: &mut ApplicationState) {
+    egui::CentralPanel::default().show(ctx, |ui| {
+        super::render_header(ui, "7. Data Viewer & Correlation");
 
         ui.horizontal(|ui| {
-            // Left panel: Data input and analysis
             ui.vertical(|ui| {
-                ui.heading("Data Import");
+                ui.set_max_width(380.0);
+
+                ui.heading("Analysis");
                 ui.separator();
+
+                ui.horizontal(|ui| {
+                    if ui.button("Run Sample Correlation").clicked() {
+                        if let Some(matrix) = &state.droplet_matrix {
+                            let predictions: Vec<f64> = matrix.droplets.iter()
+                                .map(|d| d.oxidant_concentration / 250.0)
+                                .collect();
+                            let measurements: Vec<f64> = predictions.iter()
+                                .enumerate()
+                                .map(|(i, p)| {
+                                    p + 0.05 * ((i as f64) * 0.7).sin()
+                                })
+                                .collect();
+
+                            let report = CorrelationAnalyzer::analyze_correlation(
+                                &predictions,
+                                &measurements,
+                            );
+                            state.status_message = format!(
+                                "Correlation: r={:.3}, RMSE={:.3}",
+                                report.pearson_correlation, report.rmse,
+                            );
+                            state.correlation_report = Some(report);
+                        } else {
+                            state.status_message = "Generate a matrix first".to_string();
+                        }
+                    }
+                });
 
                 ui.add_space(10.0);
 
-                ui.horizontal(|ui| {
-                    if ui.button("📁 Load Experimental Data").clicked() {
-                        // Load experimental data
-                    }
-                    if ui.button("📊 Load Simulation Data").clicked() {
-                        // Load simulation data
-                    }
-                });
+                if let Some(report) = &state.correlation_report {
+                    ui.group(|ui| {
+                        ui.strong("Correlation Report");
+                        ui.add_space(4.0);
 
-                ui.add_space(15.0);
+                        egui::Grid::new("corr_grid")
+                            .num_columns(2)
+                            .spacing([20.0, 6.0])
+                            .show(ui, |ui| {
+                                ui.label("Experiment ID:");
+                                ui.label(&report.experiment_id);
+                                ui.end_row();
 
-                ui.group(|ui| {
-                    ui.heading("Correlation Analysis");
-                    ui.add_space(5.0);
+                                ui.label("RMSE:");
+                                ui.label(format!("{:.4}", report.rmse));
+                                ui.end_row();
 
-                    ui.horizontal(|ui| {
-                        ui.label("RMSE:");
-                        ui.label("0.234");
-                    });
+                                ui.label("Pearson r:");
+                                ui.label(format!("{:.4}", report.pearson_correlation));
+                                ui.end_row();
 
-                    ui.horizontal(|ui| {
-                        ui.label("Pearson Correlation:");
-                        ui.label("0.876");
-                    });
+                                ui.label("Threshold accuracy:");
+                                ui.label(format!("{:.1}%", report.threshold_accuracy * 100.0));
+                                ui.end_row();
 
-                    ui.horizontal(|ui| {
-                        ui.label("Threshold Accuracy:");
-                        ui.label("92.3%");
+                                ui.label("Experimental variance:");
+                                ui.label(format!("{:.4}", report.experimental_variance));
+                                ui.end_row();
+
+                                ui.label("Error points:");
+                                ui.label(format!("{}", report.simulation_error_distribution.len()));
+                                ui.end_row();
+                            });
                     });
 
                     ui.add_space(10.0);
 
+                    ui.horizontal(|ui| {
+                        if ui.button("Export Report (JSON)").clicked() {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .set_file_name("correlation_report.json")
+                                .add_filter("JSON", &["json"])
+                                .save_file()
+                            {
+                                match serde_json::to_string_pretty(report) {
+                                    Ok(json) => match std::fs::write(&path, &json) {
+                                        Ok(_) => state.status_message = format!("Saved to {}", path.display()),
+                                        Err(e) => state.status_message = format!("Write error: {}", e),
+                                    },
+                                    Err(e) => state.status_message = format!("JSON error: {}", e),
+                                }
+                            }
+                        }
+                    });
+                }
+
+                ui.add_space(15.0);
+
+                if let Some(matrix) = &state.droplet_matrix {
+                    ui.heading("Matrix Data");
                     ui.separator();
-                    ui.add_space(10.0);
 
-                    ui.label("Simulation Error Distribution:");
-                    ui.label("Mean: 0.12 ± 0.08");
-
-                    ui.add_space(5.0);
-
-                    ui.label("Experimental Variance:");
-                    ui.label("0.156");
-                });
-
-                ui.add_space(15.0);
-
-                ui.group(|ui| {
-                    ui.heading("Analysis Options");
-                    ui.add_space(5.0);
-
-                    ui.checkbox(&mut show_prediction, "Show prediction vs measurement");
-                    ui.checkbox(&mut show_error_dist, "Show error distribution");
-                    ui.checkbox(&mut show_residual, "Show residual plot");
-                    ui.checkbox(&mut show_confidence, "Show confidence intervals");
-
-                    ui.add_space(10.0);
-
-                    if ui.button("Run Correlation Analysis").clicked() {
-                        // Run analysis
+                    if ui.button("Export Full Data (CSV)").clicked() {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .set_file_name("experiment_data.csv")
+                            .add_filter("CSV", &["csv"])
+                            .save_file()
+                        {
+                            match export_data_csv(matrix, &path) {
+                                Ok(_) => state.status_message = format!("Saved to {}", path.display()),
+                                Err(e) => state.status_message = format!("Export error: {}", e),
+                            }
+                        }
                     }
 
-                    if ui.button("Export Report (PDF)").clicked() {
-                        // Export report
+                    if ui.button("Export Full Data (JSON)").clicked() {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .set_file_name("experiment_data.json")
+                            .add_filter("JSON", &["json"])
+                            .save_file()
+                        {
+                            match serde_json::to_string_pretty(matrix) {
+                                Ok(json) => match std::fs::write(&path, &json) {
+                                    Ok(_) => state.status_message = format!("Saved to {}", path.display()),
+                                    Err(e) => state.status_message = format!("Write error: {}", e),
+                                },
+                                Err(e) => state.status_message = format!("JSON error: {}", e),
+                            }
+                        }
                     }
-                });
-
-                ui.add_space(15.0);
-
-                ui.group(|ui| {
-                    ui.heading("Data Export");
-                    ui.add_space(5.0);
-
-                    ui.horizontal(|ui| {
-                        if ui.button("Export CSV").clicked() {
-                            // Export to CSV
-                        }
-                        if ui.button("Export JSON").clicked() {
-                            // Export to JSON
-                        }
-                    });
-
-                    ui.horizontal(|ui| {
-                        if ui.button("Export Parquet").clicked() {
-                            // Export to Parquet
-                        }
-                        if ui.button("Export Excel").clicked() {
-                            // Export to Excel
-                        }
-                    });
-                });
+                }
             });
 
             ui.separator();
 
-            // Right panel: Visualization
             ui.vertical(|ui| {
-                ui.heading("Visualizations");
+                ui.heading("Scatter Plot");
                 ui.separator();
 
-                ui.add_space(10.0);
+                if let Some(_report) = &state.correlation_report {
+                    if let Some(matrix) = &state.droplet_matrix {
+                        let predictions: Vec<f64> = matrix.droplets.iter()
+                            .map(|d| d.oxidant_concentration / 250.0)
+                            .collect();
+                        let measurements: Vec<f64> = predictions.iter()
+                            .enumerate()
+                            .map(|(i, p)| p + 0.05 * ((i as f64) * 0.7).sin())
+                            .collect();
 
-                // Tabs for different visualizations
-                ui.horizontal(|ui| {
-                    ui.selectable_value(&mut selected_viz, 0usize, "Prediction vs Measured");
-                    ui.selectable_value(&mut selected_viz, 1usize, "Error Dist.");
-                    ui.selectable_value(&mut selected_viz, 2usize, "Heatmap");
-                });
+                        draw_scatter(ui, &predictions, &measurements);
 
-                ui.add_space(10.0);
-
-                // Simple visualization placeholder
-                ui.group(|ui| {
-                    ui.heading("Prediction vs Experimental Measurements");
-                    ui.add_space(10.0);
-
-                    let painter = ui.painter();
-                    let min = ui.cursor().min;
-                    let max_x = min.x + 500.0;
-                    let max_y = min.y + 400.0;
-
-                    // Draw axes
-                    let origin = egui::pos2(min.x + 40.0, min.y + 360.0);
-                    let x_max = min.x + 480.0;
-                    let y_max = min.y + 40.0;
-
-                    // X-axis
-                    painter.line_segment(
-                        [origin, egui::pos2(x_max, origin.y)],
-                        (2.0, egui::Color32::GRAY),
-                    );
-
-                    // Y-axis
-                    painter.line_segment(
-                        [origin, egui::pos2(origin.x, y_max)],
-                        (2.0, egui::Color32::GRAY),
-                    );
-
-                    // Labels
-                    painter.text(
-                        egui::pos2(min.x + 260.0, min.y + 375.0),
-                        egui::Align2::CENTER_TOP,
-                        "Gumol Prediction",
-                        egui::FontId::default(),
-                        egui::Color32::GRAY,
-                    );
-
-                    painter.text(
-                        egui::pos2(min.x + 10.0, min.y + 200.0),
-                        egui::Align2::LEFT_CENTER,
-                        "Experiment",
-                        egui::FontId::default(),
-                        egui::Color32::GRAY,
-                    );
-
-                    // Draw diagonal line (perfect correlation)
-                    painter.line_segment(
-                        [egui::pos2(origin.x, origin.y), egui::pos2(x_max, y_max)],
-                        (1.0, egui::Color32::LIGHT_GRAY),
-                    );
-
-                    // Draw data points
-                    let plot_width = x_max - origin.x;
-                    let plot_height = origin.y - y_max;
-
-                    for i in 0..20 {
-                        let x = (i as f32) / 20.0;
-                        let y = x + 0.1 * (i as f32 / 20.0 - 0.5).sin();
-
-                        let px = origin.x + x * plot_width;
-                        let py = origin.y - y * plot_height;
-
-                        let color = if (y - x).abs() < 0.1 {
-                            egui::Color32::GREEN
-                        } else {
-                            egui::Color32::RED
-                        };
-
-                        painter.circle_filled(egui::pos2(px, py), 4.0, color);
+                        ui.add_space(8.0);
+                        ui.horizontal(|ui| {
+                            ui.label("Green = |error| < 0.05");
+                            ui.label("Red = |error| >= 0.05");
+                        });
                     }
-
-                    ui.add_space(400.0);
-                });
-
-                ui.add_space(15.0);
-
-                ui.group(|ui| {
-                    ui.heading("Legend");
-                    ui.horizontal(|ui| {
-                        let painter = ui.painter();
-                        let pos = ui.cursor().min;
-
-                        painter.circle_filled(egui::pos2(pos.x + 10.0, pos.y + 10.0), 4.0, egui::Color32::GREEN);
-                        ui.label("High accuracy (|error| < 0.1)");
-                    });
-
-                    ui.horizontal(|ui| {
-                        let painter = ui.painter();
-                        let pos = ui.cursor().min;
-
-                        painter.circle_filled(egui::pos2(pos.x + 10.0, pos.y + 10.0), 4.0, egui::Color32::RED);
-                        ui.label("Low accuracy (|error| ≥ 0.1)");
-                    });
-                });
-
-                ui.add_space(15.0);
-
-                ui.group(|ui| {
-                    ui.heading("Data Summary");
-                    ui.add_space(5.0);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Total data points:");
-                        ui.label("20");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("High accuracy points:");
-                        ui.label("16 (80%)");
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("Low accuracy points:");
-                        ui.label("4 (20%)");
-                    });
-                });
+                } else {
+                    ui.add_space(20.0);
+                    ui.label("Run a correlation analysis to see the scatter plot.");
+                }
             });
         });
     });
+}
+
+fn draw_scatter(ui: &mut egui::Ui, predictions: &[f64], measurements: &[f64]) {
+    let size = egui::vec2(400.0, 350.0);
+    let (response, painter) = ui.allocate_painter(size, egui::Sense::hover());
+    let rect = response.rect;
+
+    let margin = 35.0;
+    let plot_min = egui::pos2(rect.min.x + margin, rect.min.y + 10.0);
+    let plot_max = egui::pos2(rect.max.x - 10.0, rect.max.y - margin);
+    let plot_w = plot_max.x - plot_min.x;
+    let plot_h = plot_max.y - plot_min.y;
+
+    painter.rect_filled(
+        egui::Rect::from_min_max(plot_min, plot_max),
+        0.0,
+        egui::Color32::from_rgb(40, 40, 50),
+    );
+
+    painter.line_segment(
+        [egui::pos2(plot_min.x, plot_max.y), egui::pos2(plot_max.x, plot_min.y)],
+        egui::Stroke::new(1.0, egui::Color32::from_rgb(80, 80, 80)),
+    );
+
+    let n = predictions.len().min(measurements.len());
+    for i in 0..n {
+        let px = plot_min.x + (predictions[i] as f32).clamp(0.0, 1.0) * plot_w;
+        let py = plot_max.y - (measurements[i] as f32).clamp(0.0, 1.0) * plot_h;
+        let err = (predictions[i] - measurements[i]).abs();
+        let color = if err < 0.05 {
+            egui::Color32::from_rgb(80, 220, 80)
+        } else {
+            egui::Color32::from_rgb(220, 80, 80)
+        };
+        painter.circle_filled(egui::pos2(px, py), 3.0, color);
+    }
+
+    painter.text(
+        egui::pos2((plot_min.x + plot_max.x) / 2.0, rect.max.y - 5.0),
+        egui::Align2::CENTER_BOTTOM,
+        "Gumol Prediction",
+        egui::FontId::proportional(12.0),
+        egui::Color32::GRAY,
+    );
+    painter.text(
+        egui::pos2(rect.min.x + 5.0, (plot_min.y + plot_max.y) / 2.0),
+        egui::Align2::LEFT_CENTER,
+        "Measured",
+        egui::FontId::proportional(12.0),
+        egui::Color32::GRAY,
+    );
+}
+
+fn export_data_csv(
+    matrix: &crate::data_models::DropletMatrix,
+    path: &std::path::Path,
+) -> anyhow::Result<()> {
+    let mut wtr = csv::Writer::from_path(path)?;
+    wtr.write_record(["droplet_id", "oxidant_type", "oxidant_uM", "antioxidant", "antioxidant_UmL", "exposure_min", "buffer"])?;
+    for d in &matrix.droplets {
+        wtr.write_record([
+            &d.droplet_id,
+            &d.oxidant_type,
+            &format!("{:.1}", d.oxidant_concentration),
+            &d.antioxidant,
+            &format!("{:.1}", d.antioxidant_concentration),
+            &format!("{:.0}", d.exposure_time),
+            &d.buffer_type,
+        ])?;
+    }
+    wtr.flush()?;
+    Ok(())
 }

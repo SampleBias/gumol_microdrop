@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use std::path::PathBuf;
 
-#[derive(Resource, Default, Clone, PartialEq, Eq)]
+#[derive(Resource, Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CurrentPanel {
     #[default]
     SimulationImport,
@@ -15,10 +15,81 @@ pub enum CurrentPanel {
     DataViewer,
 }
 
-#[derive(Resource, Default, Clone)]
+#[derive(Clone, Copy, PartialEq, Eq, Default, Debug)]
+pub enum ColorMode {
+    #[default]
+    Oxidant,
+    Antioxidant,
+    ExposureTime,
+    Treatment,
+}
+
+#[derive(Resource)]
 pub struct ApplicationState {
     pub simulation_file: Option<PathBuf>,
+    pub simulation: Option<GumolSimulation>,
+    pub feature_vector: Option<SimulationFeatureVector>,
+    pub parameter_ranges: HashMap<String, Vec<f64>>,
+
+    pub card_name: String,
+    pub grid_rows: usize,
+    pub grid_cols: usize,
+    pub oxidant_type: String,
+    pub min_concentration: f64,
+    pub max_concentration: f64,
+    pub antioxidants: Vec<(String, bool)>,
+    pub exposure_times: Vec<f64>,
+
     pub droplet_matrix: Option<DropletMatrix>,
+    pub nuclera_config: Option<NucleraCartridgeConfig>,
+    pub protocol: Option<ExperimentProtocol>,
+    pub correlation_report: Option<CorrelationReport>,
+
+    pub default_volume: f64,
+    pub mixing_cycles: u32,
+    pub readout_method: String,
+    pub wavelength: f64,
+    pub readout_exposure: f64,
+
+    pub selected_droplet: Option<usize>,
+    pub color_mode: ColorMode,
+    pub status_message: String,
+}
+
+impl Default for ApplicationState {
+    fn default() -> Self {
+        Self {
+            simulation_file: None,
+            simulation: None,
+            feature_vector: None,
+            parameter_ranges: HashMap::new(),
+            card_name: "My Experiment Card".to_string(),
+            grid_rows: 8,
+            grid_cols: 12,
+            oxidant_type: "H2O2".to_string(),
+            min_concentration: 0.0,
+            max_concentration: 250.0,
+            antioxidants: vec![
+                ("Control".to_string(), true),
+                ("SOD3".to_string(), true),
+                ("Catalase".to_string(), false),
+                ("GPx".to_string(), false),
+            ],
+            exposure_times: vec![5.0, 10.0, 30.0, 60.0],
+            droplet_matrix: None,
+            nuclera_config: None,
+            protocol: None,
+            correlation_report: None,
+            default_volume: 5.0,
+            mixing_cycles: 5,
+            readout_method: "Fluorescence".to_string(),
+            wavelength: 520.0,
+            readout_exposure: 0.1,
+            selected_droplet: None,
+            color_mode: ColorMode::default(),
+            status_message: "Ready".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
