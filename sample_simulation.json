@@ -1,0 +1,88 @@
+{
+  "simulation_id": "gumol_run_001",
+  "radical_species": ["O2-", "H2O2", "OH"],
+  "time_series": [
+    {
+      "time": 0.0,
+      "radical_density": {
+        "O2-": 0.0,
+        "H2O2": 0.0,
+        "OH": 0.0
+      },
+      "antioxidant_activity": 0.0,
+      "damage_probability": 0.0
+    },
+    {
+      "time": 10.0,
+      "radical_density": {
+        "O2-": 0.5,
+        "H2O2": 0.3,
+        "OH": 0.1
+      },
+      "antioxidant_activity": 0.2,
+      "damage_probability": 0.1
+    },
+    {
+      "time": 20.0,
+      "radical_density": {
+        "O2-": 1.2,
+        "H2O2": 0.8,
+        "OH": 0.2
+      },
+      "antioxidant_activity": 0.3,
+      "damage_probability": 0.25
+    },
+    {
+      "time": 30.0,
+      "radical_density": {
+        "O2-": 2.0,
+        "H2O2": 1.5,
+        "OH": 0.3
+      },
+      "antioxidant_activity": 0.4,
+      "damage_probability": 0.45
+    },
+    {
+      "time": 40.0,
+      "radical_density": {
+        "O2-": 2.8,
+        "H2O2": 2.2,
+        "OH": 0.4
+      },
+      "antioxidant_activity": 0.5,
+      "damage_probability": 0.6
+    },
+    {
+      "time": 50.0,
+      "radical_density": {
+        "O2-": 3.5,
+        "H2O2": 2.8,
+        "OH": 0.5
+      },
+      "antioxidant_activity": 0.6,
+      "damage_probability": 0.75
+    },
+    {
+      "time": 60.0,
+      "radical_density": {
+        "O2-": 4.0,
+        "H2O2": 3.2,
+        "OH": 0.6
+      },
+      "antioxidant_activity": 0.7,
+      "damage_probability": 0.85
+    }
+  ],
+  "diffusion_constants": {
+    "O2-": 1.5,
+    "H2O2": 2.0,
+    "OH": 2.5
+  },
+  "reaction_rates": {
+    "O2-": 0.8,
+    "H2O2": 0.6,
+    "OH": 0.9
+  },
+  "damage_threshold": 0.67,
+  "temperature": 298.15
+}

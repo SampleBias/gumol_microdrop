@@ -1,0 +1,15 @@
+# Rust build artifacts
+/target/
+
+# Cargo lock (optional: some projects commit it, some don't)
+# Cargo.lock
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
