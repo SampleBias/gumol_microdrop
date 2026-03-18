@@ -54,6 +54,10 @@ pub struct ApplicationState {
     pub selected_droplet: Option<usize>,
     pub color_mode: ColorMode,
     pub status_message: String,
+
+    pub experimental_data: Vec<ExperimentalDataPoint>,
+    pub scatter_predictions: Vec<f64>,
+    pub scatter_measurements: Vec<f64>,
 }
 
 impl Default for ApplicationState {
@@ -88,6 +92,9 @@ impl Default for ApplicationState {
             selected_droplet: None,
             color_mode: ColorMode::default(),
             status_message: "Ready".to_string(),
+            experimental_data: Vec::new(),
+            scatter_predictions: Vec::new(),
+            scatter_measurements: Vec::new(),
         }
     }
 }

@@ -1,88 +1,140 @@
 {
-  "simulation_id": "gumol_run_001",
+  "simulation_id": "gumol_oxidative_stress_007",
   "radical_species": ["O2-", "H2O2", "OH"],
   "time_series": [
     {
       "time": 0.0,
-      "radical_density": {
-        "O2-": 0.0,
-        "H2O2": 0.0,
-        "OH": 0.0
-      },
-      "antioxidant_activity": 0.0,
-      "damage_probability": 0.0
+      "radical_density": { "O2-": 0.00, "H2O2": 0.00, "OH": 0.00 },
+      "antioxidant_activity": 0.00,
+      "damage_probability": 0.00
+    },
+    {
+      "time": 2.0,
+      "radical_density": { "O2-": 0.15, "H2O2": 0.08, "OH": 0.02 },
+      "antioxidant_activity": 0.05,
+      "damage_probability": 0.02
+    },
+    {
+      "time": 5.0,
+      "radical_density": { "O2-": 0.45, "H2O2": 0.25, "OH": 0.07 },
+      "antioxidant_activity": 0.12,
+      "damage_probability": 0.06
+    },
+    {
+      "time": 8.0,
+      "radical_density": { "O2-": 0.78, "H2O2": 0.48, "OH": 0.12 },
+      "antioxidant_activity": 0.18,
+      "damage_probability": 0.12
     },
     {
       "time": 10.0,
-      "radical_density": {
-        "O2-": 0.5,
-        "H2O2": 0.3,
-        "OH": 0.1
-      },
-      "antioxidant_activity": 0.2,
-      "damage_probability": 0.1
+      "radical_density": { "O2-": 1.05, "H2O2": 0.65, "OH": 0.16 },
+      "antioxidant_activity": 0.22,
+      "damage_probability": 0.18
+    },
+    {
+      "time": 15.0,
+      "radical_density": { "O2-": 1.55, "H2O2": 1.02, "OH": 0.22 },
+      "antioxidant_activity": 0.30,
+      "damage_probability": 0.28
     },
     {
       "time": 20.0,
-      "radical_density": {
-        "O2-": 1.2,
-        "H2O2": 0.8,
-        "OH": 0.2
-      },
-      "antioxidant_activity": 0.3,
-      "damage_probability": 0.25
+      "radical_density": { "O2-": 2.00, "H2O2": 1.38, "OH": 0.28 },
+      "antioxidant_activity": 0.36,
+      "damage_probability": 0.37
     },
     {
-      "time": 30.0,
-      "radical_density": {
-        "O2-": 2.0,
-        "H2O2": 1.5,
-        "OH": 0.3
-      },
-      "antioxidant_activity": 0.4,
+      "time": 25.0,
+      "radical_density": { "O2-": 2.38, "H2O2": 1.72, "OH": 0.33 },
+      "antioxidant_activity": 0.41,
       "damage_probability": 0.45
     },
     {
+      "time": 30.0,
+      "radical_density": { "O2-": 2.70, "H2O2": 2.00, "OH": 0.38 },
+      "antioxidant_activity": 0.45,
+      "damage_probability": 0.52
+    },
+    {
+      "time": 35.0,
+      "radical_density": { "O2-": 2.98, "H2O2": 2.25, "OH": 0.42 },
+      "antioxidant_activity": 0.49,
+      "damage_probability": 0.58
+    },
+    {
       "time": 40.0,
-      "radical_density": {
-        "O2-": 2.8,
-        "H2O2": 2.2,
-        "OH": 0.4
-      },
-      "antioxidant_activity": 0.5,
-      "damage_probability": 0.6
+      "radical_density": { "O2-": 3.22, "H2O2": 2.48, "OH": 0.46 },
+      "antioxidant_activity": 0.52,
+      "damage_probability": 0.64
+    },
+    {
+      "time": 45.0,
+      "radical_density": { "O2-": 3.42, "H2O2": 2.68, "OH": 0.50 },
+      "antioxidant_activity": 0.55,
+      "damage_probability": 0.70
     },
     {
       "time": 50.0,
-      "radical_density": {
-        "O2-": 3.5,
-        "H2O2": 2.8,
-        "OH": 0.5
-      },
-      "antioxidant_activity": 0.6,
+      "radical_density": { "O2-": 3.60, "H2O2": 2.85, "OH": 0.53 },
+      "antioxidant_activity": 0.58,
       "damage_probability": 0.75
     },
     {
+      "time": 55.0,
+      "radical_density": { "O2-": 3.75, "H2O2": 3.00, "OH": 0.56 },
+      "antioxidant_activity": 0.60,
+      "damage_probability": 0.80
+    },
+    {
       "time": 60.0,
-      "radical_density": {
-        "O2-": 4.0,
-        "H2O2": 3.2,
-        "OH": 0.6
-      },
-      "antioxidant_activity": 0.7,
-      "damage_probability": 0.85
+      "radical_density": { "O2-": 3.88, "H2O2": 3.12, "OH": 0.58 },
+      "antioxidant_activity": 0.62,
+      "damage_probability": 0.84
+    },
+    {
+      "time": 70.0,
+      "radical_density": { "O2-": 4.05, "H2O2": 3.30, "OH": 0.62 },
+      "antioxidant_activity": 0.65,
+      "damage_probability": 0.89
+    },
+    {
+      "time": 80.0,
+      "radical_density": { "O2-": 4.18, "H2O2": 3.42, "OH": 0.65 },
+      "antioxidant_activity": 0.67,
+      "damage_probability": 0.92
+    },
+    {
+      "time": 90.0,
+      "radical_density": { "O2-": 4.25, "H2O2": 3.50, "OH": 0.67 },
+      "antioxidant_activity": 0.69,
+      "damage_probability": 0.94
+    },
+    {
+      "time": 100.0,
+      "radical_density": { "O2-": 4.30, "H2O2": 3.55, "OH": 0.68 },
+      "antioxidant_activity": 0.70,
+      "damage_probability": 0.95
+    },
+    {
+      "time": 120.0,
+      "radical_density": { "O2-": 4.35, "H2O2": 3.58, "OH": 0.69 },
+      "antioxidant_activity": 0.71,
+      "damage_probability": 0.96
     }
   ],
   "diffusion_constants": {
-    "O2-": 1.5,
-    "H2O2": 2.0,
-    "OH": 2.5
+    "O2-": 1.75,
+    "H2O2": 2.20,
+    "OH": 2.80
   },
   "reaction_rates": {
-    "O2-": 0.8,
-    "H2O2": 0.6,
-    "OH": 0.9
+    "O2-_dismutation": 0.85,
+    "H2O2_decomposition": 0.55,
+    "OH_scavenging": 1.20,
+    "lipid_peroxidation": 0.42,
+    "protein_oxidation": 0.38
   },
   "damage_threshold": 0.67,
-  "temperature": 298.15
+  "temperature": 310.15
 }
