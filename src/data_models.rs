@@ -3,6 +3,32 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use std::path::PathBuf;
 
+use crate::eprotein::EproteinProjectState;
+
+/// Top-level product mode: legacy Gumol ROS path vs Nuclera-aligned eProtein Discovery path.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum WorkflowMode {
+    #[default]
+    GumolRos,
+    EproteinDiscovery,
+}
+
+/// Navigation within the eProtein workflow (maps to design → screen → export → results → scale-up).
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum EproteinNavPanel {
+    /// Step 1: constructs, topology, future prediction APIs
+    #[default]
+    ConstructDesign,
+    /// Step 2: 192 / 88 expression grid (construct × blend)
+    ScreenMatrix,
+    /// Step 2b/3: YAML + express/purify protocol (stub → full export)
+    ExportProtocol,
+    /// Import cloud/export results, ranking (stub)
+    Results,
+    /// Scale-up checklist (stub)
+    ScaleUp,
+}
+
 #[derive(Resource, Default, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum CurrentPanel {
     #[default]
@@ -26,6 +52,10 @@ pub enum ColorMode {
 
 #[derive(Resource)]
 pub struct ApplicationState {
+    pub workflow: WorkflowMode,
+    pub eprotein_panel: EproteinNavPanel,
+    pub eprotein: EproteinProjectState,
+
     pub simulation_file: Option<PathBuf>,
     pub simulation: Option<GumolSimulation>,
     pub feature_vector: Option<SimulationFeatureVector>,
@@ -63,6 +93,9 @@ pub struct ApplicationState {
 impl Default for ApplicationState {
     fn default() -> Self {
         Self {
+            workflow: WorkflowMode::default(),
+            eprotein_panel: EproteinNavPanel::default(),
+            eprotein: EproteinProjectState::default(),
             simulation_file: None,
             simulation: None,
             feature_vector: None,

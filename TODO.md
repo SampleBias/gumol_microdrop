@@ -1,151 +1,82 @@
-# Gumol MicroDrop Design Studio — Development TODO
+# Gumol MicroDrop / eProtein Design Studio — Refactor & Roadmap
 
-Last updated: 2026-03-18
-
----
-
-## Completed
-
-- [x] Project scaffolding (Bevy + bevy_egui + modules)
-- [x] Core data models (GumolSimulation, DropletMatrix, NucleraCartridgeConfig, etc.)
-- [x] Simulation importer — JSON import and feature vector extraction
-- [x] Parameter translation engine — simulation → experimental ranges
-- [x] Experiment designer — config-driven matrix generation with cartridge optimization
-- [x] Nuclera config generator — cartridge config + YAML export
-- [x] Protocol generator — step-by-step protocol + Markdown export
-- [x] Correlation analyzer — RMSE, Pearson r, threshold accuracy
-- [x] Shared ApplicationState across all panels (ResMut)
-- [x] Panel 1: Simulation Import — file dialog, sample data, feature display
-- [x] Panel 2: Card Editor — centerpiece grid, color modes, Generate Matrix, cell selection
-- [x] Panel 3: Parameter Mapping — feature values, translated ranges, recalculate
-- [x] Panel 4: Experiment Design — matrix generation, preview table, CSV export
-- [x] Panel 5: Nuclera Config — settings, YAML generation, preview, file export
-- [x] Panel 6: Protocol Generator — protocol generation, equipment/reagent lists, Markdown export
-- [x] Panel 7: Data Viewer — sample correlation analysis, scatter plot, JSON/CSV export
-- [x] Left nav panel with status indicators
-- [x] Bottom status bar
-- [x] .gitignore (excludes target/)
-- [x] Sample simulation data (sample_simulation.json)
-- [x] README.md
-- [x] End-to-end data flow wired up (import → design → export)
+**Last updated:** 2026-03-18  
+**Strategy:** Keep the Bevy + bevy_egui shell; add a parallel **eProtein Discovery** workflow aligned with Nuclera’s design → express/purify → scale-up story. Gumol ROS workflow remains available.
 
 ---
 
-## In Progress
+## Refactor phases (current plan)
 
-- [ ] **Testing** — Verify full workflow: import sample → generate matrix → export YAML/protocol
+### Phase 0 — Foundation ✅ **done** (2026-03-21)
+- [x] This `TODO.md` as single source of truth for refactor tasks
+- [x] `WorkflowMode`: `GumolRos` | `EproteinDiscovery` in `ApplicationState`
+- [x] `eprotein` module: core types (`Construct`, `CellFreeBlend`, screen kinds, matrix slots)
+- [x] `EproteinNavPanel` + dual navigation in `main.rs` (window title: **MicroDrop Design Studio**)
+- [x] `modules/eprotein_screen.rs`: build **192** (soluble) / **88** (membrane) slots; unit tests
+- [x] Placeholder UI: `ui/eprotein/design.rs`, `screen_palette.rs`, `placeholders.rs`
 
----
+### Phase 1 — eProtein Design panel (constructs + predictions prep)
+- [ ] FASTA / CSV import for variant lists
+- [ ] Edit construct metadata (name, linear vs circular, tags)
+- [ ] Add `reqwest` + optional `tokio` (or blocking HTTP) for prediction APIs
+- [ ] `predictions` module: trait `PredictionClient` + first provider (e.g. BioLM solubility or DNA metrics — TBD with your API keys)
+- [ ] Cache prediction results on `Construct` / sidecar map in `EproteinProjectState`
 
-## High Priority
+### Phase 2 — Screen matrix UI (microdrop palette)
+- [ ] Visual grid for 192 or 88 slots (construct index × blend index), reusing egui patterns from `card_editor`
+- [ ] Color modes: by construct, by blend, expression tier (placeholder until real data)
+- [ ] Export screen layout CSV aligned with Nuclera handoff (validate against real Nuclera export samples when available)
 
-### Testing & Quality
-- [ ] Add unit tests for `SimulationImporter` (JSON parsing, feature extraction edge cases)
-- [ ] Add unit tests for `ParameterTranslationEngine` (range computation)
-- [ ] Add unit tests for `ExperimentDesigner` (matrix generation, cartridge optimization)
-- [ ] Add unit tests for `NucleraGenerator` (config generation, YAML serialization)
-- [ ] Add unit tests for `ProtocolGenerator` (step generation, Markdown output)
-- [ ] Add unit tests for `CorrelationAnalyzer` (RMSE, Pearson, threshold accuracy)
-- [ ] Integration test: full pipeline from JSON import to YAML/Markdown export
+### Phase 3 — Instrument export & protocol copy
+- [ ] Extend `NucleraGenerator` or add `EproteinCartridgeConfig` YAML schema documented against Nuclera docs
+- [ ] Protocol text: eGene prep → cartridge load → expression screen → purification ranking → scale-up hints
+- [ ] File dialogs for YAML / Markdown (reuse existing patterns)
 
-### CSV Import
-- [ ] Implement real CSV parsing in `SimulationImporter::import_from_csv()` (currently a stub)
-- [ ] Define and document the expected CSV column format
-- [ ] Add CSV format auto-detection
+### Phase 4 — Results & scale-up
+- [ ] Import expression / purification results (CSV/JSON) from cloud export or manual file
+- [ ] Rank expressors; table + simple charts (egui)
+- [ ] Scale-up panel: selected construct + blend, volumes, checklist
 
-### Data Viewer Enhancements
-- [ ] Load real experimental data from CSV files (not just synthetic sample data)
-- [ ] Parse experimental CSV into `ExperimentalDataPoint` structs
-- [ ] Correlation analysis against actual measurements
-
----
-
-## Medium Priority
-
-### UI Polish
-- [ ] Add undo/redo for card editor changes
-- [ ] Persist UI state to disk between sessions (recent files, last configuration)
-- [ ] Add keyboard shortcuts for common actions (Ctrl+S export, Ctrl+G generate)
-- [ ] Add confirmation dialogs before overwriting exported files
-- [ ] Improve card editor: allow editing individual droplet conditions by clicking cells
-- [ ] Add drag-select for multiple cell editing in card editor
-- [ ] Dark/light theme toggle
-
-### Card Editor Enhancements
-- [ ] Custom antioxidant concentration per condition (currently fixed at 50 U/mL)
-- [ ] Per-row and per-column condition assignment (batch editing)
-- [ ] Template presets (e.g., "Standard ROS Panel", "Dose Response")
-- [ ] Import card design from CSV
-
-### Export Improvements
-- [ ] PDF export for protocols (currently Markdown only)
-- [ ] Excel (.xlsx) export for matrix data
-- [ ] Parquet export for large datasets
-- [ ] Batch export (all outputs in one operation)
-
-### Nuclera Integration
-- [ ] Validate cartridge config against Nuclera hardware constraints
-- [ ] Support multiple cartridge sizes (not just 96-well)
-- [ ] Routing optimization for droplet generation order
+### Phase 5 — Quality & docs
+- [ ] Unit tests: `eprotein_screen`, parsers, API client (mocked)
+- [ ] README section: workflow switch, API keys, Nuclera disclaimer (no public third-party API guaranteed)
+- [ ] Optional: rename binary / crate to reflect dual product (later)
 
 ---
 
-## Low Priority / Future
+## Legacy product (Gumol ROS) — backlog
 
-### Advanced Features
-- [ ] HDF5 import support for large simulations
-- [ ] Bayesian optimization for experiment design (minimize conditions needed)
-- [ ] Async file loading for large simulation files (prevent UI blocking)
-- [ ] Real-time visualization updates when parameters change (animated grid)
-- [ ] Closed-loop simulation refinement (feed experimental data back to Gumol)
-- [ ] Multi-simulation comparison view
+See sections below for tests, CSV import, and UI polish that still apply to **GumolRos** mode only.
 
-### Visualization
-- [ ] Restore Bevy 2D/3D droplet grid rendering (currently egui-only)
-- [ ] Heatmap visualization in Data Viewer
-- [ ] Error distribution histogram
-- [ ] Residual plots
-- [ ] Confidence interval overlays on scatter plot
+### Completed (historical)
+- [x] Gumol pipeline end-to-end (import → matrix → YAML → protocol → correlation)
+- [x] Sample `sample_simulation.json` + `sample_experimental_results.csv`
+- [x] README platform-agnostic note
 
-### Infrastructure
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Cross-platform packaging (AppImage for Linux, .dmg for macOS, .msi for Windows)
-- [ ] Automated release builds
-- [ ] Performance benchmarks for large matrices (>1000 droplets)
+### High priority (Gumol)
+- [ ] Unit tests for core `modules/*` (importer, translation, designer, nuclera, protocol, correlation)
+- [ ] Real CSV import for Gumol simulations
 
-### API & Integration
-- [ ] REST API for headless operation (generate configs without GUI)
-- [ ] Nuclera platform API integration (when available)
-- [ ] Gumol engine direct integration (trigger simulations from the tool)
+### Medium priority
+- [ ] Per-cell editing, presets, theme, undo/redo
 
 ---
 
-## Notes for Developers
+## Decision log
 
-### Build Commands
-```bash
-cargo run          # Dev build (fast compile, dynamic linking)
-cargo run --release  # Release build (optimized)
-cargo check        # Type-check only
-cargo test         # Run tests
-cargo fmt          # Format code
-cargo clippy       # Lint
-```
+| Date | Decision |
+|------|----------|
+| 2026-03-18 | **Refactor, not scrap:** shared Bevy/egui shell; new `eprotein` domain + `WorkflowMode` toggle. |
+| 2026-03-18 | Nuclera integration assumed **file + cloud UX handoff** until a partner API is confirmed. |
 
-### Architecture Quick Reference
-- All shared state: `ApplicationState` in `src/data_models.rs`
-- Business logic: `src/modules/*.rs` (no UI deps)
-- UI panels: `src/ui/*.rs` (each is a `render()` function)
-- Entry point: `src/main.rs` → `ui_system()` dispatches to panels
+---
 
-### Adding a New Panel
-1. Create `src/ui/new_panel.rs` with a `pub fn render(ctx, state, panel)` function
-2. Add `pub mod new_panel;` to `src/ui/mod.rs`
-3. Add variant to `CurrentPanel` enum in `src/data_models.rs`
-4. Add match arm in `ui_system()` in `src/main.rs`
-5. Add nav entry in the side panel
+## Quick links (code)
 
-### Adding New State
-1. Add field to `ApplicationState` in `src/data_models.rs`
-2. Set default in the `Default` impl
-3. Access via `state.field_name` in panel render functions
+| Area | Path |
+|------|------|
+| Workflow + Gumol state | `src/data_models.rs` |
+| eProtein types | `src/eprotein/models.rs` |
+| 192 / 88 matrix builder | `src/modules/eprotein_screen.rs` |
+| eProtein UI | `src/ui/eprotein/*.rs` |
+| App entry / nav | `src/main.rs` |

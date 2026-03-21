@@ -2,6 +2,17 @@
 
 A native Rust application for converting molecular dynamics oxidative stress simulations from the **Gumol engine** into experimentally executable microdroplet assays. The tool generates platform-agnostic experiment designs — droplet matrices, cartridge configurations, and wet-lab protocols — that can be adapted to a range of digital microfluidics systems and standard laboratory equipment.
 
+### Dual workflow (sidebar)
+
+Use the **Workflow** selector in the left panel:
+
+| Mode | Purpose |
+|------|---------|
+| **Gumol ROS** | Original pipeline: Gumol simulation → oxidative stress droplet matrix → exports → correlation |
+| **eProtein** | Nuclera-aligned path: construct design → **192** (soluble) or **88** (membrane) expression screen → export / results / scale-up (panels expand in upcoming phases) |
+
+See `TODO.md` for the refactor roadmap and phase checklist.
+
 ---
 
 ## Purpose

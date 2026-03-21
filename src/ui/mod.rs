@@ -1,3 +1,4 @@
+pub mod eprotein;
 pub mod simulation_importer;
 pub mod card_editor;
 pub mod parameter_mapping;

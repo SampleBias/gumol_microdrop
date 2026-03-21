@@ -1,3 +1,4 @@
+pub mod eprotein;
 pub mod data_models;
 pub mod modules;
 pub mod ui;
